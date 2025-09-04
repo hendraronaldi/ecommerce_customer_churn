@@ -49,10 +49,3 @@ This makes churn reduction a **serious business problem** and a strong candidate
 - **ROC-AUC** provides a **threshold-independent comparison** across models.  
 - **Classification Report** ensures **interpretability and business clarity**.  
 
----
-
-## 🚀 Next Steps
-- Data preprocessing & feature engineering.  
-- Model training and hyperparameter tuning.  
-- Deploying **Streamlit simulation tool** for business users.  
-- Business impact analysis of retention strategies.  
