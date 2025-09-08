@@ -104,176 +104,176 @@ def make_prediction(input_df, customer_label="Custom Input", show_explain=True):
         return None
 
 # --- Sidebar mode ---
-option = st.sidebar.radio("Choose Simulation Mode", ["Upload Test Set", "Manual Input"])
+option = st.sidebar.radio("Choose Simulation Mode", ["Test Set", "Manual Input"])
 
-# --- Upload Test Set ---
-if option == "Upload Test Set":
+# --- Test Set ---
+if option == "Test Set":
     st.header("📉 Churn Reduction Simulation on Test Set")
 
-    uploaded_file = st.file_uploader("Upload Test Set CSV (with CustomerID and Churn column)", type=["csv"])
-    if uploaded_file:
-        test_df = pd.read_csv(uploaded_file, index_col="CustomerID")
+    # uploaded_file = st.file_uploader("Upload Test Set CSV (with CustomerID and Churn column)", type=["csv"])
+    # if uploaded_file:
+    test_df = pd.read_csv('test_set.csv', index_col="CustomerID")
 
-        st.write("Test Set Shape:", test_df.shape)
+    st.write("Test Set Shape:", test_df.shape)
+    if "Churn" in test_df.columns:
+        true_churn_rate = test_df["Churn"].mean()
+        st.write(f"✅ True Churn Rate in Test Set: {true_churn_rate:.2%}")
+
+    # Sidebar for interventions
+    st.sidebar.subheader("Intervention Simulation")
+    inc_tenure = st.sidebar.slider("Increase Tenure (months)", 0, 12, 0)
+    resolve_complain_prop = st.sidebar.slider("Reduce Complaints by (%)", 0, 100, 0)
+    inc_cashback = st.sidebar.slider("Increase Cashback (%)", 0, 50, 0)
+    reduce_inactivity = st.sidebar.slider("Reduce Inactivity Days", 0, 30, 0)
+
+    if st.sidebar.button("Run Simulation"):
+        sim_df = test_df.copy()
+
+        # --- Run base prediction ---
+        def run_prediction(df):
+            input_df = df.drop(columns=["Churn"], errors="ignore")
+            processed = preprocessor.transform(input_df)
+            processed_df = pd.DataFrame(processed, columns=preprocessor.get_feature_names_out())
+            final_df = processed_df[simplified_features]
+            preds = simplified_model.predict(final_df)
+            probs = simplified_model.predict_proba(final_df)[:, 1]
+            return preds, probs
+
+        base_preds, base_probs = run_prediction(test_df)
+        sim_df_probs = pd.Series(base_probs, index=test_df.index)
+
+        # --- Apply interventions ---
+        sim_df["Tenure"] = sim_df["Tenure"] + inc_tenure
+        sim_df["CashbackAmount"] = sim_df["CashbackAmount"] * (1 + inc_cashback / 100)
+        sim_df["DaySinceLastOrder"] = np.maximum(0, sim_df["DaySinceLastOrder"] - reduce_inactivity)
+
+        # Reduce complaints proportionally, only for customers with Complain==1
+        resolved_count = 0
+        if resolve_complain_prop > 0 and "Complain" in sim_df.columns:
+            complainers = sim_df[sim_df["Complain"] == 1].index
+            if len(complainers) > 0:
+                num_to_reduce = int(len(complainers) * resolve_complain_prop / 100)
+
+                # sort complainers by descending churn probability (highest risk first)
+                high_risk_complainers = sim_df_probs.loc[complainers].sort_values(ascending=False).index[:num_to_reduce]
+
+                # set their complaints to 0 (resolved)
+                sim_df.loc[high_risk_complainers, "Complain"] = 0
+
+                # track resolved complaints
+                resolved_count = len(high_risk_complainers)
+
+        # Later in results section
+        if resolved_count > 0:
+            st.info(f"✅ Resolved {resolved_count} complaints out of {len(complainers)} complainers "
+                    f"({resolved_count/len(complainers):.1%}).")
+
+        # --- Run simulation prediction ---
+        sim_preds, sim_probs = run_prediction(sim_df)
+
+        # Compare churn rates
+        base_pred_rate = base_preds.mean()
+        sim_pred_rate = sim_preds.mean()
+
+        # --- Prediction changes breakdown ---
+        st.subheader("🔄 Prediction Changes Breakdown")
         if "Churn" in test_df.columns:
-            true_churn_rate = test_df["Churn"].mean()
-            st.write(f"✅ True Churn Rate in Test Set: {true_churn_rate:.2%}")
+            comparison_df = pd.DataFrame({
+                "TrueLabel": test_df["Churn"],
+                "Pred_Before": base_preds,
+                "Pred_After": sim_preds
+            })
 
-        # Sidebar for interventions
-        st.sidebar.subheader("Intervention Simulation")
-        inc_tenure = st.sidebar.slider("Increase Tenure (months)", 0, 12, 0)
-        resolve_complain_prop = st.sidebar.slider("Reduce Complaints by (%)", 0, 100, 0)
-        inc_cashback = st.sidebar.slider("Increase Cashback (%)", 0, 50, 0)
-        reduce_inactivity = st.sidebar.slider("Reduce Inactivity Days", 0, 30, 0)
+            change_0to1 = ((comparison_df["Pred_Before"] == 0) & (comparison_df["Pred_After"] == 1)).sum()
+            change_1to0 = ((comparison_df["Pred_Before"] == 1) & (comparison_df["Pred_After"] == 0)).sum()
 
-        if st.sidebar.button("Run Simulation"):
-            sim_df = test_df.copy()
+            st.write(f"📈 Predictions changed **0 → 1** (non-churn → churn): {change_0to1}")
+            st.write(f"📉 Predictions changed **1 → 0** (churn → retained): {change_1to0}")
 
-            # --- Run base prediction ---
-            def run_prediction(df):
-                input_df = df.drop(columns=["Churn"], errors="ignore")
-                processed = preprocessor.transform(input_df)
-                processed_df = pd.DataFrame(processed, columns=preprocessor.get_feature_names_out())
-                final_df = processed_df[simplified_features]
-                preds = simplified_model.predict(final_df)
-                probs = simplified_model.predict_proba(final_df)[:, 1]
-                return preds, probs
+        # --- Numerical feature means before & after ---
+        st.subheader("📊 Numerical Feature Summary")
+        num_means_before = test_df[numerical_features].mean()
+        num_means_after = sim_df[numerical_features].mean()
+        feature_diff = num_means_after - num_means_before
+        summary_df = pd.DataFrame({
+            "Mean Before": num_means_before,
+            "Mean After": num_means_after,
+            "Difference": feature_diff
+        })
+        st.dataframe(summary_df)
 
-            base_preds, base_probs = run_prediction(test_df)
-            sim_df_probs = pd.Series(base_probs, index=test_df.index)
+        # --- Simulation metrics ---
+        st.subheader("📊 Simulation Results")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("True Churn Rate", f"{true_churn_rate:.2%}")
+        col2.metric("Predicted Churn Rate (Before)", f"{base_pred_rate:.2%}")
+        col3.metric("Predicted Churn Rate (After)", f"{sim_pred_rate:.2%}",
+                    delta=f"{(base_pred_rate - sim_pred_rate):.2%}")
 
-            # --- Apply interventions ---
-            sim_df["Tenure"] = sim_df["Tenure"] + inc_tenure
-            sim_df["CashbackAmount"] = sim_df["CashbackAmount"] * (1 + inc_cashback / 100)
-            sim_df["DaySinceLastOrder"] = np.maximum(0, sim_df["DaySinceLastOrder"] - reduce_inactivity)
+        # --- Financial Impact Simulation ---
+        st.subheader("💰 Financial Impact (CAC vs CRC)")
+        if "Churn" in test_df.columns:
+            retained_customers = change_1to0  # churn → retained
+            lost_customers = change_0to1      # non-churn → churn
 
-            # Reduce complaints proportionally, only for customers with Complain==1
-            resolved_count = 0
-            if resolve_complain_prop > 0 and "Complain" in sim_df.columns:
-                complainers = sim_df[sim_df["Complain"] == 1].index
-                if len(complainers) > 0:
-                    num_to_reduce = int(len(complainers) * resolve_complain_prop / 100)
+            crc = 1  # baseline retention cost
+            cac_range = list(range(5, 26, 5))  # CAC = 5x to 25x CRC
 
-                    # sort complainers by descending churn probability (highest risk first)
-                    high_risk_complainers = sim_df_probs.loc[complainers].sort_values(ascending=False).index[:num_to_reduce]
+            st.markdown("""
+            **Explanation**  
+            - **CRC (Customer Retention Cost):** Cost to retain an existing customer.  
+            - **CAC (Customer Acquisition Cost):** Cost to acquire a new customer, typically **5–25× higher than CRC**.  
+            - **Retained customers (1→0):** Saved churns, saving you CAC per customer.  
+            - **Lost customers (0→1):** Loyal customers mistakenly treated as churn, costing only CRC per customer.  
+            """)
 
-                    # set their complaints to 0 (resolved)
-                    sim_df.loc[high_risk_complainers, "Complain"] = 0
+            impact_rows = []
+            for cac in cac_range:
+                retained_value = retained_customers * cac
+                lost_value = lost_customers * crc
+                net_impact = retained_value - lost_value
 
-                    # track resolved complaints
-                    resolved_count = len(high_risk_complainers)
-
-            # Later in results section
-            if resolved_count > 0:
-                st.info(f"✅ Resolved {resolved_count} complaints out of {len(complainers)} complainers "
-                        f"({resolved_count/len(complainers):.1%}).")
-
-            # --- Run simulation prediction ---
-            sim_preds, sim_probs = run_prediction(sim_df)
-
-            # Compare churn rates
-            base_pred_rate = base_preds.mean()
-            sim_pred_rate = sim_preds.mean()
-
-            # --- Prediction changes breakdown ---
-            st.subheader("🔄 Prediction Changes Breakdown")
-            if "Churn" in test_df.columns:
-                comparison_df = pd.DataFrame({
-                    "TrueLabel": test_df["Churn"],
-                    "Pred_Before": base_preds,
-                    "Pred_After": sim_preds
+                impact_rows.append({
+                    "CAC Multiple": f"{cac}x",
+                    "Retained Customers": retained_customers,
+                    "Value from Retention (Retained × CAC)": retained_value,
+                    "Lost Customers": lost_customers,
+                    "Cost from False Churn (Lost × CRC)": lost_value,
+                    "Net Impact": net_impact
                 })
 
-                change_0to1 = ((comparison_df["Pred_Before"] == 0) & (comparison_df["Pred_After"] == 1)).sum()
-                change_1to0 = ((comparison_df["Pred_Before"] == 1) & (comparison_df["Pred_After"] == 0)).sum()
+            impact_df = pd.DataFrame(impact_rows)
 
-                st.write(f"📈 Predictions changed **0 → 1** (non-churn → churn): {change_0to1}")
-                st.write(f"📉 Predictions changed **1 → 0** (churn → retained): {change_1to0}")
+            # Show detailed table
+            st.write("### Detailed Financial Impact")
+            st.dataframe(impact_df)
 
-            # --- Numerical feature means before & after ---
-            st.subheader("📊 Numerical Feature Summary")
-            num_means_before = test_df[numerical_features].mean()
-            num_means_after = sim_df[numerical_features].mean()
-            feature_diff = num_means_after - num_means_before
-            summary_df = pd.DataFrame({
-                "Mean Before": num_means_before,
-                "Mean After": num_means_after,
-                "Difference": feature_diff
-            })
-            st.dataframe(summary_df)
+            # Show bar chart
+            st.write("### Visual Net Impact by CAC Multiple")
+            fig, ax = plt.subplots(figsize=(6,4))
+            plt.bar(impact_df["CAC Multiple"], impact_df["Net Impact"])
+            plt.axhline(0, color="red", linestyle="--", linewidth=1)
+            plt.ylabel("Net Impact (in CRC units)")
+            plt.xlabel("CAC Multiple")
+            plt.title("Net Impact of Retaining vs Losing Customers")
+            st.pyplot(fig)
 
-            # --- Simulation metrics ---
-            st.subheader("📊 Simulation Results")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("True Churn Rate", f"{true_churn_rate:.2%}")
-            col2.metric("Predicted Churn Rate (Before)", f"{base_pred_rate:.2%}")
-            col3.metric("Predicted Churn Rate (After)", f"{sim_pred_rate:.2%}",
-                        delta=f"{(base_pred_rate - sim_pred_rate):.2%}")
+        # --- Changed customers details ---
+        comparison_full = pd.DataFrame({
+            "TrueLabel": test_df.get("Churn", np.nan),
+            "Pred_Before": base_preds,
+            "Proba_Before": base_probs,
+            "Pred_After": sim_preds,
+            "Proba_After": sim_probs
+        }, index=test_df.index)
 
-            # --- Financial Impact Simulation ---
-            st.subheader("💰 Financial Impact (CAC vs CRC)")
-            if "Churn" in test_df.columns:
-                retained_customers = change_1to0  # churn → retained
-                lost_customers = change_0to1      # non-churn → churn
+        changed_df = comparison_full[comparison_full["Pred_Before"] != comparison_full["Pred_After"]]
 
-                crc = 1  # baseline retention cost
-                cac_range = list(range(5, 26, 5))  # CAC = 5x to 25x CRC
-
-                st.markdown("""
-                **Explanation**  
-                - **CRC (Customer Retention Cost):** Cost to retain an existing customer.  
-                - **CAC (Customer Acquisition Cost):** Cost to acquire a new customer, typically **5–25× higher than CRC**.  
-                - **Retained customers (1→0):** Saved churns, saving you CAC per customer.  
-                - **Lost customers (0→1):** Loyal customers mistakenly treated as churn, costing only CRC per customer.  
-                """)
-
-                impact_rows = []
-                for cac in cac_range:
-                    retained_value = retained_customers * cac
-                    lost_value = lost_customers * crc
-                    net_impact = retained_value - lost_value
-
-                    impact_rows.append({
-                        "CAC Multiple": f"{cac}x",
-                        "Retained Customers": retained_customers,
-                        "Value from Retention (Retained × CAC)": retained_value,
-                        "Lost Customers": lost_customers,
-                        "Cost from False Churn (Lost × CRC)": lost_value,
-                        "Net Impact": net_impact
-                    })
-
-                impact_df = pd.DataFrame(impact_rows)
-
-                # Show detailed table
-                st.write("### Detailed Financial Impact")
-                st.dataframe(impact_df)
-
-                # Show bar chart
-                st.write("### Visual Net Impact by CAC Multiple")
-                fig, ax = plt.subplots(figsize=(6,4))
-                plt.bar(impact_df["CAC Multiple"], impact_df["Net Impact"])
-                plt.axhline(0, color="red", linestyle="--", linewidth=1)
-                plt.ylabel("Net Impact (in CRC units)")
-                plt.xlabel("CAC Multiple")
-                plt.title("Net Impact of Retaining vs Losing Customers")
-                st.pyplot(fig)
-
-            # --- Changed customers details ---
-            comparison_full = pd.DataFrame({
-                "TrueLabel": test_df.get("Churn", np.nan),
-                "Pred_Before": base_preds,
-                "Proba_Before": base_probs,
-                "Pred_After": sim_preds,
-                "Proba_After": sim_probs
-            }, index=test_df.index)
-
-            changed_df = comparison_full[comparison_full["Pred_Before"] != comparison_full["Pred_After"]]
-
-            st.write("### Customers Affected by Simulation")
-            if changed_df.empty:
-                st.info("No customers were affected by the simulation (no prediction changes).")
-            else:
-                st.dataframe(changed_df)
+        st.write("### Customers Affected by Simulation")
+        if changed_df.empty:
+            st.info("No customers were affected by the simulation (no prediction changes).")
+        else:
+            st.dataframe(changed_df)
 
 
 # --- Manual Input ---
