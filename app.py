@@ -54,23 +54,6 @@ def explain_prediction(final_input_df, customer_label="Custom Input"):
     except Exception as e:
         st.warning(f"SHAP explanation failed: {e}")
 
-# --- Recommendation engine ---
-def generate_recommendations(raw_input):
-    recs = []
-    if raw_input.get("Complain", 0) == 1:
-        recs.append("🚩 Customer has complained recently — resolve issues quickly.")
-    if raw_input.get("DaySinceLastOrder", 0) > 60:
-        recs.append("⚠️ Customer inactive — consider sending re-engagement offers.")
-    if raw_input.get("CouponUsed", 0) == 0:
-        recs.append("💡 No coupons used — offering a discount may help retention.")
-    if raw_input.get("SatisfactionScore", 3) <= 2:
-        recs.append("❗ Low satisfaction score — reach out for feedback or offer perks.")
-    if raw_input.get("Tenure", 0) < 6:
-        recs.append("📉 New customer with low tenure — focus on onboarding experience.")
-    if not recs:
-        recs.append("✅ No immediate risks detected. Maintain engagement.")
-    return recs
-
 # --- Prediction function ---
 def make_prediction(input_df, customer_label="Custom Input", show_explain=True):
     try:
@@ -91,11 +74,6 @@ def make_prediction(input_df, customer_label="Custom Input", show_explain=True):
 
         if show_explain:
             explain_prediction(final_input_df, customer_label)
-
-        # Recommendations
-        st.subheader("📌 Recommendations")
-        for rec in generate_recommendations(input_df.iloc[0].to_dict()):
-            st.write(rec)
 
         return probability[0]
 
@@ -298,10 +276,6 @@ elif option == "Manual Input":
     user_input_dict['CityTier'] = st.sidebar.slider("CityTier", 1, 3, 1)
     user_input_dict['SatisfactionScore'] = st.sidebar.slider("SatisfactionScore", 1, 5, 3)
 
-    st.sidebar.subheader("Binary Data")
-    user_input_dict['Gender'] = st.sidebar.selectbox("Gender", ['Male', 'Female'])
-    user_input_dict['Complain'] = st.sidebar.selectbox("Complain", ['No', 'Yes'])
-
     if st.sidebar.button("Predict Churn"):
         user_df = pd.DataFrame([user_input_dict])
         user_df['Complain'] = user_df['Complain'].map({'No': 0, 'Yes': 1})
@@ -309,16 +283,3 @@ elif option == "Manual Input":
         user_df['NumberOfAddress'] = user_df['NumberOfAddress'].astype(int)
 
         prob = make_prediction(user_df, customer_label="Manual Input")
-
-        # What-if Simulation
-        st.subheader("🎯 What-if Simulation")
-        st.markdown("Adjust key drivers to see how churn probability changes.")
-
-        sim_input = user_df.copy()
-        sim_input['Complain'] = st.selectbox("Simulate Complaint Resolution", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
-        sim_input['CouponUsed'] = st.number_input("Simulate Coupon Usage", value=int(user_df['CouponUsed'][0]), min_value=0)
-        sim_input['DaySinceLastOrder'] = st.slider("Simulate Days Since Last Order", 0, 365, int(user_df['DaySinceLastOrder'][0]))
-        sim_input['SatisfactionScore'] = st.slider("Simulate Satisfaction Score", 1, 5, int(user_df['SatisfactionScore'][0]))
-
-        if st.button("Run Simulation"):
-            make_prediction(sim_input, customer_label="Simulated Scenario", show_explain=False)
