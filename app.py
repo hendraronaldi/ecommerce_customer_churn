@@ -6,17 +6,22 @@ import shap
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
-# --- Load RFE pipeline ---
+# --- Load Best Pipeline ---
 try:
-    pipeline_rfe = joblib.load("best_selection_model_pipeline.pkl")
+    pipeline = joblib.load("best_model_fs_pipeline.pkl")
 except FileNotFoundError:
-    st.error("Error: Could not load best_selection_model_pipeline.pkl")
+    st.error("Error: Could not load best_model_fs_pipeline.pkl")
     st.stop()
 
-# Extract preprocessor, model, and selected features
-preprocessor = pipeline_rfe.named_steps["preprocessor"]
-model = pipeline_rfe.named_steps["model"]
-selected_features = preprocessor.get_feature_names_out()[pipeline_rfe.named_steps["feature_selection"].support_]
+# Extract steps
+preprocessor = pipeline.named_steps["preprocessor"]
+selector = pipeline.named_steps["select"]  # SelectPercentile
+model = pipeline.named_steps["model"]
+
+# Get final feature names after preprocessing + selection
+all_features = preprocessor.get_feature_names_out()
+selected_mask = selector.get_support()
+selected_features = [f for f, keep in zip(all_features, selected_mask) if keep]
 
 # --- App Title ---
 st.title("📊 Customer Churn Prediction & Simulation")
@@ -36,36 +41,51 @@ categorical_features = [
 ]
 
 # --- SHAP explanation ---
-def explain_prediction(final_input_df, customer_label="Custom Input"):
+def explain_prediction(input_df, customer_label="Custom Input"):
     st.subheader(f"🔎 Feature Impact (SHAP) for {customer_label}")
     try:
-        explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(final_input_df)
+        # Step 1: Preprocess manually
+        X_preprocessed = preprocessor.transform(input_df)
 
-        # Waterfall (single prediction)
+        # Step 2: Apply feature selection
+        X_selected = selector.transform(X_preprocessed)
+
+        # Step 3: Run SHAP on final model
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(X_selected)
+
+        # Handle binary vs multiclass
+        if isinstance(shap_values, list):
+            shap_values_to_use = shap_values[1]  # churn class
+            base_value = explainer.expected_value[1]
+        else:
+            shap_values_to_use = shap_values
+            base_value = explainer.expected_value
+
+        # Waterfall for first row
         st.write("Detailed feature contribution for this customer:")
         fig2, ax2 = plt.subplots(figsize=(10, 6))
-        shap.plots._waterfall.waterfall_legacy(
-            explainer.expected_value, shap_values[0], final_input_df.iloc[0]
+        shap.plots.waterfall(
+            shap.Explanation(
+                values=shap_values_to_use[0],
+                base_values=base_value,
+                data=X_selected[0],
+                feature_names=selected_features
+            ),
+            show=False
         )
         st.pyplot(fig2)
 
     except Exception as e:
         st.warning(f"SHAP explanation failed: {e}")
 
+
 # --- Prediction function ---
 def make_prediction(input_df, customer_label="Custom Input", show_explain=True):
     try:
-        # Preprocess input
-        processed_input = preprocessor.transform(input_df)
-        processed_df = pd.DataFrame(processed_input, columns=preprocessor.get_feature_names_out())
-
-        # Select only RFE-selected features
-        final_input_df = processed_df[selected_features]
-
-        # Prediction
-        prediction = model.predict(final_input_df)
-        probability = model.predict_proba(final_input_df)[:, 1]
+        # Run full pipeline
+        prediction = pipeline.predict(input_df)
+        probability = pipeline.predict_proba(input_df)[:, 1]
 
         st.subheader(f"Prediction Result for {customer_label}")
         if prediction[0] == 1:
@@ -74,7 +94,7 @@ def make_prediction(input_df, customer_label="Custom Input", show_explain=True):
             st.success(f"Low risk of Churn (Probability: {probability[0]:.2%})")
 
         if show_explain:
-            explain_prediction(final_input_df, customer_label)
+            explain_prediction(input_df, customer_label)
 
         return probability[0]
 
@@ -85,22 +105,21 @@ def make_prediction(input_df, customer_label="Custom Input", show_explain=True):
 # --- Sidebar: Prefill or Manual Input ---
 st.sidebar.header("Customer Profile")
 
-# Initialize session state for prefilled data if it doesn't exist
 if 'prefill_data' not in st.session_state:
     st.session_state.prefill_data = None
 
-# Button to prefill random test set row
 if st.sidebar.button("🎲 Prefill from Random Test Set"):
     try:
         test_df = pd.read_csv("test_set.csv")
-        test_df = test_df.drop(columns=["Churn"], errors="ignore")  # drop label if exists
-        # Store the sampled data in session state
-        st.session_state.prefill_data = test_df.sample(1, random_state=np.random.randint(0, 10000)).iloc[0].to_dict()
+        test_df = test_df.drop(columns=["Churn"], errors="ignore")
+        st.session_state.prefill_data = test_df.sample(
+            1, random_state=np.random.randint(0, 10000)
+        ).iloc[0].to_dict()
         st.sidebar.success("Random test set row loaded!")
     except FileNotFoundError:
         st.sidebar.error("test_set.csv not found!")
 
-# Collect user inputs using session state for default values
+# Collect user inputs
 user_input_dict = OrderedDict()
 
 st.sidebar.subheader("Numerical Data")
@@ -115,9 +134,11 @@ for feature in categorical_features:
         .named_steps['onehot']
         .categories_[categorical_features.index(feature)]
     )
-
     default_value = st.session_state.prefill_data[feature] if st.session_state.prefill_data else options[0]
-    user_input_dict[feature] = st.sidebar.selectbox(f"Select {feature}", options, index=options.index(default_value) if default_value in options else 0)
+    user_input_dict[feature] = st.sidebar.selectbox(
+        f"Select {feature}", options, 
+        index=options.index(default_value) if default_value in options else 0
+    )
 
 st.sidebar.subheader("Ordinal Data")
 default_city_tier = int(st.session_state.prefill_data['CityTier']) if st.session_state.prefill_data else 1
@@ -130,10 +151,10 @@ user_input_dict['SatisfactionScore'] = st.sidebar.slider("SatisfactionScore", 1,
 if st.sidebar.button("Predict Churn"):
     user_df = pd.DataFrame([user_input_dict])
 
-    # Map binary to match training encoding
+    # Map binary fields
     if "Complain" in user_df:
         user_df["Complain"] = user_df["Complain"].map({"No": 0, "Yes": 1}).fillna(user_df["Complain"])
     if "Gender" in user_df:
         user_df["Gender"] = user_df["Gender"].map({"Male": "Male", "Female": "Female"})
 
-    prob = make_prediction(user_df, customer_label="Manual Input")
+    make_prediction(user_df, customer_label="Manual Input")
