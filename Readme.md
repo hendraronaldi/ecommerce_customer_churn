@@ -85,50 +85,57 @@ Data columns (total 20 columns) & 5630 rows:
 
 ## Methodology Analysis
 
-**Benchmarking**
+### Benchmarking
 
---- ROS Results Summary ---
+**Feature Selection**
+- Experiment show `70` percentile (from 31 to 21 features) perform good enough with `F2 Score > 0.94`
+## 📊 FS_70 Train vs Test Results
 
-| Model | F2-Score | ROC-AUC | Precision | Recall |
-| :--- | :--- | :--- | :--- | :--- |
-| RandomForestClassifier | 0.967403 | 0.998650 | 0.963351 | 0.968421 |
-| XGBClassifier | 0.964173 | 0.999022 | 0.968254 | 0.963158 |
-| DecisionTreeClassifier | 0.876727 | 0.925664 | 0.911602 | 0.868421 |
-| KNeighborsClassifier | 0.864374 | 0.969408 | 0.630662 | 0.952632 |
-| LogisticRegression | 0.723801 | 0.884233 | 0.445355 | 0.857895 |
+| Model                   | Features Used | Train F2 | Test F2 | Train ROC-AUC | Test ROC-AUC | Train Precision | Test Precision | Train Recall | Test Recall |
+|--------------------------|---------------|----------|---------|---------------|--------------|-----------------|----------------|--------------|-------------|
+| DecisionTreeClassifier   | 21            | 1.000    | 0.960   | 1.000         | 0.977        | 1.000           | 0.907          | 1.000        | 0.974       |
+| XGBClassifier            | 21            | 1.000    | 0.944   | 1.000         | 0.998        | 1.000           | 0.952          | 1.000        | 0.942       |
+| RandomForestClassifier   | 21            | 1.000    | 0.934   | 1.000         | 0.998        | 1.000           | 0.967          | 1.000        | 0.926       |
+| KNeighborsClassifier     | 21            | 0.860    | 0.681   | 0.992         | 0.964        | 0.959           | 0.897          | 0.838        | 0.642       |
+| LogisticRegression       | 21            | 0.562    | 0.578   | 0.891         | 0.878        | 0.785           | 0.786          | 0.525        | 0.542       |
 
---- SMOTE Results Summary ---
-| Model | F2-Score | ROC-AUC | Precision | Recall |
-| :--- | :--- | :--- | :--- | :--- |
-| XGBClassifier | 0.958904 | 0.997627 | 0.962963 | 0.957895 |
-| DecisionTreeClassifier | 0.916581 | 0.950793 | 0.843602 | 0.936842 |
-| RandomForestClassifier | 0.892667 | 0.995133 | 0.928177 | 0.884211 |
-| KNeighborsClassifier | 0.856742 | 0.968466 | 0.594156 | 0.963158 |
-| LogisticRegression | 0.705301 | 0.882720 | 0.444759 | 0.826316 |
+**Oversampling**
+- With addition `70` percentile feature selection
 
-`XGBoostClassifier` and `RandomForestClassifier` chosen as benchmark models using oversampling `Random Oversampling` and `SMOTE`
+## 📊 F2 Score Comparison (Test Set, Sorted by FS_70)
 
-**Hyperparameter Tuning**
-| Experiment | F2-Score | Precision | Recall | ROC-AUC |
-| :--- | :--- | :--- | :--- | :--- |
-| XGB+ROS | 0.971933 | 0.925743 | 0.984211 | 0.997824 |
-| XGB+SMOTE | 0.960929 | 0.973262 | 0.957895 | 0.998459 |
-| RF+ROS | 0.952626 | 0.876777 | 0.973684 | 0.997245 |
-| RF+SMOTE | 0.892667 | 0.928177 | 0.884211 | 0.995133 |
+| Model                   | FS_70  | FS_70_ROS | FS_70_SMOTE |
+|--------------------------|--------|-----------|-------------|
+| DecisionTreeClassifier   | 0.960  | 0.899     | 0.862       |
+| XGBClassifier            | 0.944  | 0.958     | 0.943       |
+| RandomForestClassifier   | 0.934  | 0.960     | 0.918       |
+| KNeighborsClassifier     | 0.681  | 0.903     | 0.889       |
+| LogisticRegression       | 0.578  | 0.686     | 0.678       |
+
+`XGBoostClassifier` and `RandomForestClassifier` chosen as benchmark models using oversampling `Random Oversampling`
+
+### Hyperparameter Tuning
+## 🏆 Final Results
+
+| Experiment | F2-Score | Precision | Recall  | ROC-AUC |
+|------------|----------|-----------|---------|---------|
+| XGB + ROS  | **0.960** | 0.948     | 0.963   | 0.998   |
+| RF + ROS   | 0.952    | 0.929     | 0.958   | 0.999   |
 
 ![](./assets/hyperparameter_tuning_cm.png)
 `XGBoostClassifier` using `ROS` is the best preprocess + model pipeline
 
-**Feature Selection**
-| Pipeline | F2-Score | Precision | Recall | ROC-AUC |
-| :--- | :--- | :--- | :--- | :--- |
-| Full Features | 0.971933 | 0.925743 | 0.984211 | 0.997824 |
-| Feature Selection (RFECV) | 0.964730 | 0.911765 | 0.978947 | 0.998617 |
-
-![](./assets/feature_selection_confusion_matrix.png)
+**Feature Importances**
+![](./assets/feature_importances.png)
+![](./assets/shap.png)
 
 ## Conclusion
-A high-performing XGBoost model is successfully developed to predict customer churn. The **Recursive Feature Elimination with Cross-Validation (RFECV)** feature selection process successfully reduced the number of features from 31 to 27 with minimal impact on model performance. The primary metric, **F2-Score**, which prioritizes recall (catching churners), remains excellent for both models, with the feature-selected model achieving a score of **0.965**. This indicates that the model is highly effective at identifying customers at risk of churning.
+A high-performing **XGBoost** model is successfully developed to predict customer churn.  
+Using a **SelectPercentile feature selection (70%)**, the number of features was reduced from **31 to 21** while maintaining strong model performance.  
+
+The primary metric, **F2-Score**, which prioritizes recall (catching churners), remains excellent, with the feature-selected model achieving a score of **0.960**.  
+
+✅ This demonstrates that the model is highly effective at identifying customers at risk of churning while operating with a more compact feature set.
 
 ***
 
@@ -136,7 +143,7 @@ A high-performing XGBoost model is successfully developed to predict customer ch
 * **Customer Complaints:** Having a complaint on file (`Complain_0`) is the **second most important factor** and a very strong indicator of churn risk. Customers who have complained are highly likely to leave.
 * **Payment and Login Methods:** The preferred payment mode (`PreferredPaymentMode_Credit Card`, `PreferredPaymentMode_E wallet`) and login device (`PreferredLoginDevice_Computer`) are important signals. This may suggest that customers who use specific methods or devices have different engagement patterns.
 * **Marital Status:** Being single (`MaritalStatus_Single`) is a notable predictor of churn, while being married has a smaller impact. This finding aligns with the observation that different customer demographics have different churn probabilities.
-* **Order and Engagement Metrics:** Features like `OrderAmountHikeFromlastYear`, `NumberOfAddress`, and `CashbackAmount` all have a strong negative correlation with churn. Customers who show have more addresses, receive higher cashback are much less likely to churn. The `SatisfactionScore` may not have clear measure in what context it is since it has a strong positive correlation with churn. 
+* **Order and Engagement Metrics:** Features like `OrderAmountHikeFromlastYear`, `NumberOfAddress`, and `CashbackAmount` all have a strong negative correlation with churn. Customers who show have more addresses, receive higher cashback are much less likely to churn. The `SatisfactionScore` may not have clear measure in what context it is since it has a strong positive correlation with churn.
 
 ## Recommendation Actions
 1.  **Focus on New Customer Retention:** Since `Tenure` is the top predictor, create a proactive retention strategy specifically for new customers in their first few months. This could include personalized onboarding, exclusive offers, or check-in surveys to ensure they have a positive experience.
@@ -146,64 +153,54 @@ A high-performing XGBoost model is successfully developed to predict customer ch
 5.  **Develop Targeted Campaigns for Specific Demographics:** Use the insights from the `MaritalStatus` feature to create tailored marketing campaigns. For example, offer benefits or products that appeal to single customers to increase their engagement and loyalty.
 
 ## Measurable Impact
-![](./assets/final_confusion_matrix.png)
+![](./assets/final_fs_confusion_matrix.png)
 
 ### Assumptions for this Simulation 💰
 
-To quantify the impact, we'll assign monetary values based on common business metrics.
+We’ll calculate costs using the general formula:  
 
-* **Average Customer Lifetime Value (CLV):** Let's assume the average customer generates **$480** in revenue over their lifetime.
-* **Customer Retention Cost (CRC):** The cost to save an at-risk customer (e.g., a discount, a personalized call) is **$50**.
-* **Customer Acquisition Cost (CAC):** Based on the principle that CAC is 5x CRC, we'll set this at **$250**.
+**Total Cost = (FP + TP) × CRC + FN × CAC**
 
-Using the Confusion Matrix for the **Feature Selection (RFECV)** model, here's how we measure the impact for a sample of 1,126 customers.
+* **Customer Retention Cost (CRC):** $50  
+* **Customer Acquisition Cost (CAC):** $250  
+* **Sample Size:** 1,126 customers  
 
-***
+---
 
-### 1. The Cost of Mistakes
+### 1. Cost With Model (Best Pipeline Confusion Matrix)
 
-#### **False Negatives (FN): The Most Expensive Error**
-These are customers the model missed, and who subsequently churned. This is the core reason for building a churn model.
-* **Number of FNs:** 4 customers
-* **Business Impact:** You lose their lifetime value and must spend money to acquire a new customer to replace them.
-* **Cost Calculation:** 4 FNs × (Lost CLV + CAC)
-* **Total Cost:** 4 × ($480 + $250) = **$2,920**
+- **TP = 183**  
+- **FP = 10**  
+- **FN = 7**  
 
-#### **False Positives (FP): The Less Costly Error**
-These are customers the model incorrectly flagged as at-risk, so you spent resources on them unnecessarily.
-* **Number of FPs:** 18 customers
-* **Business Impact:** This is a wasted retention cost. You spend money on a customer who would have stayed anyway.
-* **Cost Calculation:** 18 FPs × CRC
-* **Total Cost:** 18 × $50 = **$900**
+**Calculation:**  
+- (TP + FP) × CRC = (183 + 10) × 50 = 193 × 50 = **$9,650**  
+- FN × CAC = 7 × 250 = **$1,750**  
+- **Total Cost (With Model) = $9,650 + $1,750 = $11,400**  
 
-***
+---
 
-### 2. The Value of Correct Predictions
+### 2. Cost Without Model (Naive: Treat All as At-Risk)
 
-#### **True Positives (TP): The Highest ROI**
-These are customers the model correctly identified as at-risk. You can now act to save them.
-* **Number of TPs:** 186 customers
-* **Business Impact:** You successfully saved a customer's lifetime value by spending a small retention cost.
-* **Value Calculation:** 186 TPs × (CLV saved - CRC spent)
-* **Total Value:** 186 × ($480 - $50) = **$79,980**
+- **TP = 190** (all churners)  
+- **FP = 936** (all non-churners treated as at-risk)  
+- **FN = 0**  
 
-#### **True Negatives (TN): The Baseline**
-These are customers correctly identified as loyal, so no action is needed.
-* **Number of TNs:** 918 customers
-* **Business Impact:** The model helps you save money by confirming who is safe, so you don't waste resources.
-* **Total Value:** 918 TNs × ($0 cost) = **$0** (in immediate cost savings, the value is in avoiding unnecessary spending).
+**Calculation:**  
+- (TP + FP) × CRC = (190 + 936) × 50 = 1,126 × 50 = **$56,300**  
+- FN × CAC = 0 × 250 = **$0**  
+- **Total Cost (Without Model) = $56,300**  
 
-***
+---
 
-### Summary of Measurable Impact
+### 3. Cost Comparison  
 
-By deploying this model, the business gains a clear financial advantage:
+| Scenario         | Formula Applied                       | Total Cost |
+|------------------|---------------------------------------|------------|
+| **With Model**   | (TP + FP) × CRC + FN × CAC = 193×50 + 7×250 | **$11,400** |
+| **Without Model**| (TP + FP) × CRC + FN × CAC = 1,126×50 + 0   | **$56,300** |
+| **Savings**      | —                                     | **$44,900** |
 
-| Prediction Outcome    | Financial Value (or Cost) |
-|-----------------------|---------------------------|
-| **Total Value from TP** | **+$79,980** |
-| **Total Cost from FP** | **-$900** |
-| **Total Cost from FN** | **-$2,920** |
-| **Net Financial Impact**| **+$76,160** |
+---
 
-The analysis shows that the **net value created by the model is over $76,000** for this group of customers. The model is exceptionally good at preventing the most expensive mistake (churning customers) and generates a huge return on the small costs of its misclassifications.
+✅ By deploying this model, the business reduces costs from **$56,300** down to **$11,400**, achieving a net saving of **$44,900** — which is roughly **79.7% lower cost** compared to the naive approach.
