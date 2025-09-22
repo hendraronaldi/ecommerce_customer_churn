@@ -1,4 +1,5 @@
-# 🛒 Customer Churn Prediction – E-commerce Case Study
+# 🛒 Customer Churn Prediction
+- [Streamlit](https://ecommercecustomerchurn-alpha-jcdsol19.streamlit.app/)
 
 ## 📌 Business Problem Statement
 The Kaggle dataset represents a **general e-commerce retail model**, where churn means customers became inactive.  
