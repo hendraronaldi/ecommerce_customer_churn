@@ -1,4 +1,9 @@
+# Purwadhika JCDSOL19 - Final Project - Kelompok Alpha
+- Hendra Ronaldi
+- Dhiya Ilham Trihatmaja
+
 # 🛒 Customer Churn Prediction
+
 - [Streamlit](https://ecommercecustomerchurn-alpha-jcdsol19.streamlit.app/)
 - [Dashboard](https://lookerstudio.google.com/reporting/10509b68-b21c-4cd9-afe0-e264abbb2272/page/NO6YF)
 
