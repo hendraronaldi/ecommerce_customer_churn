@@ -94,6 +94,12 @@ Data columns (total 20 columns) & 5630 rows:
 
 ## Methodology Analysis
 
+### Preprocessing
+- Imputer (Median) Numerical Features
+- Robust Scaler
+- OneHot Encoding
+- Ordinal Encoding
+
 ### Benchmarking
 
 **Feature Selection**
@@ -170,8 +176,8 @@ We’ll calculate costs using the general formula:
 
 **Total Cost = (FP + TP) × CRC + FN × CAC**
 
-* **Customer Retention Cost (CRC):** $50  
-* **Customer Acquisition Cost (CAC):** $250  
+* **Customer Retention Cost (CRC):** $17  
+* **Customer Acquisition Cost (CAC):** $85 [Reference](https://www.upcounting.com/blog/average-ecommerce-customer-acquisition-cost?utm_source=chatgpt.com)   
 * **Sample Size:** 1,126 customers  
 
 ---
@@ -183,9 +189,9 @@ We’ll calculate costs using the general formula:
 - **FN = 7**  
 
 **Calculation:**  
-- (TP + FP) × CRC = (183 + 10) × 50 = 193 × 50 = **$9,650**  
-- FN × CAC = 7 × 250 = **$1,750**  
-- **Total Cost (With Model) = $9,650 + $1,750 = $11,400**  
+- (TP + FP) × CRC = (183 + 10) × 50 = 193 × 17 = **$3,281**  
+- FN × CAC = 7 × 85 = **$595**  
+- **Total Cost (With Model) = $3,281 + $595 = $3,876**  
 
 ---
 
@@ -196,9 +202,9 @@ We’ll calculate costs using the general formula:
 - **FN = 0**  
 
 **Calculation:**  
-- (TP + FP) × CRC = (190 + 936) × 50 = 1,126 × 50 = **$56,300**  
-- FN × CAC = 0 × 250 = **$0**  
-- **Total Cost (Without Model) = $56,300**  
+- (TP + FP) × CRC = (190 + 936) × 17 = 1,126 × 17 = **$19,142**  
+- FN × CAC = 0 × 85 = **$0**  
+- **Total Cost (Without Model) = $19,142**  
 
 ---
 
@@ -206,10 +212,10 @@ We’ll calculate costs using the general formula:
 
 | Scenario         | Formula Applied                       | Total Cost |
 |------------------|---------------------------------------|------------|
-| **With Model**   | (TP + FP) × CRC + FN × CAC = 193×50 + 7×250 | **$11,400** |
-| **Without Model**| (TP + FP) × CRC + FN × CAC = 1,126×50 + 0   | **$56,300** |
-| **Savings**      | —                                     | **$44,900** |
+| **With Model**   | (TP + FP) × CRC + FN × CAC = 193×17 + 7×85 | **$3,876** |
+| **Without Model**| (TP + FP) × CRC + FN × CAC = 1,126×17 + 0   | **$19,142** |
+| **Savings**      | —                                     | **$15,266** |
 
 ---
 
-✅ By deploying this model, the business reduces costs from **$56,300** down to **$11,400**, achieving a net saving of **$44,900** — which is roughly **79.7% lower cost** compared to the naive approach.
+✅ By deploying this model, the business reduces costs from **$19,142** down to **$3,876**, achieving a net saving of **$15,266** — which is roughly **79.7% lower cost** compared to the naive approach.
