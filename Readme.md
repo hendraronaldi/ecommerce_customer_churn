@@ -1,4 +1,8 @@
-# 🛒 Customer Churn Prediction – E-commerce Case Study
+# 🛒 Customer Churn Prediction
+- [Streamlit](https://ecommercecustomerchurn-alpha-jcdsol19.streamlit.app/)
+- [Dashboard](https://lookerstudio.google.com/reporting/10509b68-b21c-4cd9-afe0-e264abbb2272/page/NO6YF)
+
+![](./assets/dashboard.png)
 
 ## 📌 Business Problem Statement
 The Kaggle dataset represents a **general e-commerce retail model**, where churn means customers became inactive.  
@@ -75,11 +79,11 @@ Data columns (total 20 columns) & 5630 rows:
 | 18 | DaySinceLastOrder | 5323 | `float64` |
 | 19 | CashbackAmount | 5630 | `float64` |
 
-![](./assets/missing_values.png)
 - Missing Values Exist
+![](./assets/missing_values.png)
 
-![](./assets/bivariate_tenure.png)
 - Most of the numerical features are not normal distributed
+![](./assets/bivariate_tenure.png)
 
 ---
 
