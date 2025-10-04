@@ -2,7 +2,7 @@
 - Hendra Ronaldi
 - Dhiya Ilham Trihatmaja
 
-# 🛒 Customer Churn Prediction
+# Purwapedia: Preventing Customer Churn with Machine Learning Prediction
 
 - [Streamlit](https://ecommercecustomerchurn-alpha-jcdsol19.streamlit.app/)
 - [Dashboard](https://lookerstudio.google.com/reporting/10509b68-b21c-4cd9-afe0-e264abbb2272/page/NO6YF)
@@ -10,16 +10,9 @@
 ![](./assets/dashboard.png)
 
 ## 📌 Business Problem Statement
-The Kaggle dataset represents a **general e-commerce retail model**, where churn means customers became inactive.  
+Purwapedia is your smart & rewarding shopping companion. We offer curated products, fast PurwaExpress delivery, and a loyalty program (PurwaPoints) to make online shopping seamless and satisfying. Last month, we noticed a worrying trend. Out of 5,630 users, 16% (≈900 customers) stopped engaging with us. They are "churning", means leaving our platform for competitors. This is a signal that parts of our customer experience are failing.
 
-In retail e-commerce, annual churn rates of **60–80%** are common  
-([Ecommerce Fastlane](https://ecommercefastlane.com/ecommerce-churn-rates-measure-and-reduce-lost-customers-and-revenue/?utm_source=chatgpt.com);  
-[Sobot.io](https://www.sobot.io/article/average-churn-rate-for-ecommerce-stores-trends-2024-2025/?utm_source=chatgpt.com)).  
-
-For this project, we **assume the dataset reflects one month of customer activity**.  
-Under this assumption, the ~16% churn rate is far above healthy monthly benchmarks of **5–10%** seen in subscription-style e-commerce  
-([ScaleMath](https://scalemath.com/blog/what-is-a-good-monthly-churn-rate/?utm_source=chatgpt.com);  
-[Opensend](https://www.opensend.com/post/churn-rate-ecommerce?utm_source=chatgpt.com)).  
+The Kaggle dataset represents a **general e-commerce retail model**, where churn means customers became inactive. For this project, we **assume the dataset reflects one month of customer activity**. Under this assumption, the ~16% churn rate is far above healthy monthly benchmarks of **5–10%** seen in subscription-style e-commerce ([ScaleMath](https://scalemath.com/blog/what-is-a-good-monthly-churn-rate/?utm_source=chatgpt.com); [Opensend](https://www.opensend.com/post/churn-rate-ecommerce?utm_source=chatgpt.com)). 
 
 This makes churn reduction a **serious business problem** and a strong candidate for predictive modeling and retention strategies.
 
@@ -44,16 +37,11 @@ For this churn dataset, the following evaluation setup will be used:
 
 2. **Supporting Metric → ROC-AUC**  
    - Evaluates model discriminative power independent of thresholds.  
-   - Widely used in churn research as a benchmark for classification quality.  
-
-3. **Supporting Tool → Precision & Recall**  
-   - Reports Precision and Recall for each class.  
-   - Provides transparency into trade-offs, allowing business stakeholders to see exactly how many churners are caught versus how many loyal customers are misclassified.  
+   - Widely used in churn research as a benchmark for classification quality.    
 
 **Summary:**  
 - **F2-Score** will be the headline evaluation metric.  
-- **ROC-AUC** provides a threshold-independent comparison across models.  
-- **Precision & Recall** ensures interpretability and business clarity.
+- **ROC-AUC** provides a threshold-independent comparison across models.
 
 ---
 
@@ -95,6 +83,7 @@ Data columns (total 20 columns) & 5630 rows:
 ## Methodology Analysis
 
 ### Preprocessing
+- Stratified Train Test Split (Preventing Information Leakage)
 - Imputer (Median) Numerical Features
 - Robust Scaler
 - OneHot Encoding
@@ -103,42 +92,59 @@ Data columns (total 20 columns) & 5630 rows:
 ### Benchmarking
 
 **Feature Selection**
-- Experiment show `70` percentile (from 31 to 21 features) perform good enough with `F2 Score > 0.94`
-## 📊 FS_70 Train vs Test Results
+- Experiment show `70` percentile (from 31 to 21 features) perform good enough with globally all models show increasing cross validation mean evaluation F2 score until this point.
 
-| Model                   | Features Used | Train F2 | Test F2 | Train ROC-AUC | Test ROC-AUC | Train Precision | Test Precision | Train Recall | Test Recall |
-|--------------------------|---------------|----------|---------|---------------|--------------|-----------------|----------------|--------------|-------------|
-| DecisionTreeClassifier   | 21            | 1.000    | 0.960   | 1.000         | 0.977        | 1.000           | 0.907          | 1.000        | 0.974       |
-| XGBClassifier            | 21            | 1.000    | 0.944   | 1.000         | 0.998        | 1.000           | 0.952          | 1.000        | 0.942       |
-| RandomForestClassifier   | 21            | 1.000    | 0.934   | 1.000         | 0.998        | 1.000           | 0.967          | 1.000        | 0.926       |
-| KNeighborsClassifier     | 21            | 0.860    | 0.681   | 0.992         | 0.964        | 0.959           | 0.897          | 0.838        | 0.642       |
-| LogisticRegression       | 21            | 0.562    | 0.578   | 0.891         | 0.878        | 0.785           | 0.786          | 0.525        | 0.542       |
+| Model                  | FS_50 (±)       | FS_60 (±)       | FS_70 (±)       | FS_80 (±)       | FS_90 (±)       | FS_100 (±)      |
+| ---------------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
+| LogisticRegression     | 0.4843 ± 0.0405 | 0.4782 ± 0.0604 | 0.5374 ± 0.0350 | 0.5628 ± 0.0479 | 0.5615 ± 0.0483 | 0.5636 ± 0.0562 |
+| KNeighborsClassifier   | 0.5068 ± 0.0416 | 0.5269 ± 0.0424 | 0.5825 ± 0.0456 | 0.5921 ± 0.0356 | 0.6160 ± 0.0318 | 0.5617 ± 0.0227 |
+| DecisionTreeClassifier | 0.7835 ± 0.0268 | 0.8120 ± 0.0159 | 0.8153 ± 0.0151 | 0.8229 ± 0.0153 | 0.8221 ± 0.0207 | 0.8002 ± 0.0270 |
+| RandomForestClassifier | 0.7513 ± 0.0242 | 0.7944 ± 0.0165 | 0.8049 ± 0.0334 | 0.7972 ± 0.0328 | 0.8079 ± 0.0255 | 0.7875 ± 0.0373 |
+| XGBClassifier          | 0.7941 ± 0.0350 | 0.8162 ± 0.0289 | 0.8298 ± 0.0260 | 0.8301 ± 0.0305 | 0.8460 ± 0.0234 | 0.8276 ± 0.0408 |
+
+| Feature Selection Change | LogisticRegression | KNeighborsClassifier | DecisionTreeClassifier | RandomForestClassifier | XGBClassifier |
+| ------------------------ | ------------------ | -------------------- | ---------------------- | ---------------------- | ------------- |
+| 50 → 60                  | -0.0060            | 0.0201               | 0.0285                 | 0.0431                 | 0.0221        |
+| 60 → 70                  | 0.0592             | 0.0555               | 0.0033                 | 0.0106                 | 0.0136        |
+| 70 → 80                  | 0.0253             | 0.0096               | 0.0076                 | -0.0078                | 0.0002        |
+| 80 → 90                  | -0.0012            | 0.0239               | -0.0008                | 0.0107                 | 0.0159        |
+| 90 → 100                 | 0.0020             | -0.0543              | -0.0219                | -0.0204                | -0.0184       |
 
 **Oversampling**
 - With addition `70` percentile feature selection
 
-## 📊 F2 Score Comparison (Test Set, Sorted by FS_70)
+| Model                  | FS_70_ROS (±)   | FS_70_SMOTE (±) |
+| ---------------------- | --------------- | --------------- |
+| LogisticRegression     | 0.6892 ± 0.0270 | 0.6760 ± 0.0345 |
+| KNeighborsClassifier   | 0.8103 ± 0.0189 | 0.8168 ± 0.0091 |
+| DecisionTreeClassifier | 0.7786 ± 0.0280 | 0.7829 ± 0.0450 |
+| RandomForestClassifier | 0.8466 ± 0.0303 | 0.8165 ± 0.0254 |
+| XGBClassifier          | 0.8640 ± 0.0250 | 0.8280 ± 0.0338 |
 
-| Model                   | FS_70  | FS_70_ROS | FS_70_SMOTE |
-|--------------------------|--------|-----------|-------------|
-| DecisionTreeClassifier   | 0.960  | 0.899     | 0.862       |
-| XGBClassifier            | 0.944  | 0.958     | 0.943       |
-| RandomForestClassifier   | 0.934  | 0.960     | 0.918       |
-| KNeighborsClassifier     | 0.681  | 0.903     | 0.889       |
-| LogisticRegression       | 0.578  | 0.686     | 0.678       |
 
-`XGBoostClassifier` and `RandomForestClassifier` chosen as benchmark models using oversampling `Random Oversampling`
+`XGBoostClassifier` and `RandomForestClassifier` perform better using `ROS` in the same feature selection `70` percentile compare to original and `SMOTE` oversampling.
+
+`XGBoostClassifier` and `RandomForestClassifier`, feature selection `70` percentile and `ROS` are chosen for hyperparameter tuning.
 
 ### Hyperparameter Tuning
-## 🏆 Final Results
+=== Cross-Validation F2 Score Summary (Mean ± Std) ===
+| Experiment | CV F2 (Mean ± Std) |
+| ---------- | ------------------ |
+| XGB+ROS    | 0.8660 ± 0.0254    |
+| RF+ROS     | 0.8560 ± 0.0259    |
+✅ Best experiment based on CV F2: XGB+ROS (0.8660)
 
-| Experiment | F2-Score | Precision | Recall  | ROC-AUC |
-|------------|----------|-----------|---------|---------|
-| XGB + ROS  | **0.960** | 0.948     | 0.963   | 0.998   |
-| RF + ROS   | 0.952    | 0.929     | 0.958   | 0.999   |
+--- Final Results (Train vs. Test) for Best Model ---
+| Metric   | XGB+ROS (Train) | XGB+ROS (Test) |
+| -------- | --------------- | -------------- |
+| F2-Score | 1.0000          | 0.9601         |
+| ROC-AUC  | 1.0000          | 0.9983         |
 
 ![](./assets/hyperparameter_tuning_cm.png)
-`XGBoostClassifier` using `ROS` is the best preprocess + model pipeline
+- Best Model: `XGBClassifier` with `70` percentile feature selection and `Random Oversampling`
+- Best Params: `{'model__learning_rate': 0.2, 'model__max_depth': 7, 'model__n_estimators': 200}`
+
+This model performs very good with mean evaluation F2 score `0.866` and standard deviation `0.0254`. No overfit clearly shown by F2 score `1.0` train and `0.96` test, ROC AUC score `1.0` train and `0.998` test.
 
 **Feature Importances**
 ![](./assets/feature_importances.png)
@@ -156,15 +162,29 @@ The primary metric, **F2-Score**, which prioritizes recall (catching churners), 
 
 * **Tenure:** This is the **most significant predictor** of churn. New customers (`low Tenure`) are far more likely to churn than long-term customers. This is a common pattern and suggests that the initial customer experience is critical.
 * **Customer Complaints:** Having a complaint on file (`Complain_0`) is the **second most important factor** and a very strong indicator of churn risk. Customers who have complained are highly likely to leave.
-* **Payment and Login Methods:** The preferred payment mode (`PreferredPaymentMode_Credit Card`, `PreferredPaymentMode_E wallet`) and login device (`PreferredLoginDevice_Computer`) are important signals. This may suggest that customers who use specific methods or devices have different engagement patterns.
 * **Marital Status:** Being single (`MaritalStatus_Single`) is a notable predictor of churn, while being married has a smaller impact. This finding aligns with the observation that different customer demographics have different churn probabilities.
-* **Order and Engagement Metrics:** Features like `OrderAmountHikeFromlastYear`, `NumberOfAddress`, and `CashbackAmount` all have a strong negative correlation with churn. Customers who show have more addresses, receive higher cashback are much less likely to churn. The `SatisfactionScore` may not have clear measure in what context it is since it has a strong positive correlation with churn. (Satisfaction scores maybe measured not from purchase reviews, but from app reviews or customer service feedback.) 
+* **Order and Engagement Metrics:** Customers who receive bigger CashbackAmount are less likely to churn, while customers who show have more addresses and far distance are more likely to churn. The SatisfactionScore may not have clear measure in what context it is since the higher score seems more likely to churn (Satisfaction scores maybe measured not from purchase reviews, but from app reviews or customer service feedback).
 
 ## Recommendation Actions
-1.  **Focus on New Customer Retention:** Since `Tenure` is the top predictor, create a proactive retention strategy specifically for new customers in their first few months. This could include personalized onboarding, exclusive offers, or check-in surveys to ensure they have a positive experience.
-2.  **Establish a Complaint Resolution Task Force:** Given the strong link between complaints and churn, implement a high-priority system to handle customer complaints swiftly and effectively. The goal should be to resolve issues to the customer's satisfaction within a specific timeframe and monitor their engagement afterward.
-3.  **Launch a Customer Engagement Program:** Use the model to identify customers with low `SatisfactionScore` or low `CashbackAmount` and target them with personalized campaigns. For example, offer a loyalty program that rewards higher cashback or a survey with a discount incentive to improve their satisfaction.
-4.  **Develop Targeted Campaigns for Specific Demographics:** Use the insights from the `MaritalStatus` feature to create tailored marketing campaigns. For example, offer benefits or products that appeal to single customers to increase their engagement and loyalty.
+* **Engage New Customers Early**
+    * **Stakeholders:** Marketing Team, Product Manager
+    * **Duration:** **90 days**
+    * **Action:** Marketing crafts personalized content/offers; Product Manager manages in-app onboarding features.
+
+* **Prioritize Complaint Resolution**
+    * **Stakeholders:** Customer Support, Data Analytics Teams
+    * **Duration:** **1-2 months**
+    * **Action:** Customer Support implements a fast-track resolution system; Data Analytics monitors post-resolution satisfaction.
+
+* **Boost Engagement for At-Risk Segments**
+    * **Stakeholders:** Marketing Team, Data Analytics, Product Manager
+    * **Duration:** **2-3 months**
+    * **Action:** Data identifies dissatisfied/low-cashback users; Marketing designs loyalty campaigns; Product Manager prepares campaign features.
+
+* **Develop Demographic-Specific Campaigns**
+    * **Stakeholders:** Marketing, Data Analytics Teams
+    * **Duration:** **2 months**
+    * **Action:** Data designs demographic segmentation; Marketing creates and executes tailored campaigns (e.g., for single customers).
 
 ## Measurable Impact
 ![](./assets/final_fs_confusion_matrix.png)
