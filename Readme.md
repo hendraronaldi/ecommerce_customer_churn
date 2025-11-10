@@ -6,7 +6,7 @@
 
 - [Streamlit](https://ecommercecustomerchurn-alpha-jcdsol19.streamlit.app/)
 - [Dashboard](https://lookerstudio.google.com/reporting/10509b68-b21c-4cd9-afe0-e264abbb2272/page/NO6YF)
-- [Slide Presentation](https://drive.google.com/file/d/1bUQcHeSRuj3ZIugLBi4oC6jqDw0xDzd4/view)
+- [Slide Presentation](https://drive.google.com/file/d/1mtWsI30xhXkLpkZlIlB2RR8Dgm-N4rlb/view)
 
 ![](./assets/dashboard.png)
 
