@@ -14,8 +14,11 @@
 Purwapedia is your smart & rewarding shopping companion. We offer curated products, fast PurwaExpress delivery, and a loyalty program (PurwaPoints) to make online shopping seamless and satisfying. Last month, we noticed a worrying trend. Out of 5,630 users, 16% (≈900 customers) stopped engaging with us. They are "churning", means leaving our platform for competitors. This is a signal that parts of our customer experience are failing.
 
 The Kaggle dataset represents a **general e-commerce retail model**, where churn means customers became inactive. For this project, we **assume the dataset reflects one month of customer activity**. Under this assumption, the ~16% churn rate is far above healthy monthly benchmarks of **5–10%** seen in subscription-style e-commerce ([ScaleMath](https://scalemath.com/blog/what-is-a-good-monthly-churn-rate/?utm_source=chatgpt.com); [Opensend](https://www.opensend.com/post/churn-rate-ecommerce?utm_source=chatgpt.com)). 
-
 This makes churn reduction a **serious business problem** and a strong candidate for predictive modeling and retention strategies.
+
+From a cost perspective, studies show that **acquiring a new customer is 5–25× more expensive than retaining an existing one** ([Harvard Business Review, 2014](https://hbr.org/2014/10/the-value-of-keeping-the-right-customers?utm_source=chatgpt.com)).  
+This means **failing to detect a churner (False Negative)** is far more costly than **mistakenly flagging a loyal customer as at-risk (False Positive)**.  
+Therefore, our modeling focus should be more on **minimizing False Negatives**—ensuring we capture as many real churners as possible—while keeping False Positives within a reasonable range to avoid unnecessary retention spending. The **F2 score** is selected as the primary model performance metric because it **weights Recall more heavily than Precision**.
 
 ---
 
@@ -145,7 +148,7 @@ Data columns (total 20 columns) & 5630 rows:
 - Best Model: `XGBClassifier` with `70` percentile feature selection and `Random Oversampling`
 - Best Params: `{'model__learning_rate': 0.2, 'model__max_depth': 7, 'model__n_estimators': 200}`
 
-This model performs very good with mean evaluation F2 score `0.866` and standard deviation `0.0254`. No overfit clearly shown by F2 score `1.0` train and `0.96` test, ROC AUC score `1.0` train and `0.998` test.
+This model performs very good with mean evaluation F2 score `0.866` and standard deviation `0.0254`. Although the test performance appears very high, **no data leakage was detected**. The **train–test split was performed early in the preprocessing pipeline**, ensuring that feature selection, scaling, and resampling were applied **only on the training data** to maintain model validity.
 
 **Feature Importances**
 ![](./assets/feature_importances.png)
